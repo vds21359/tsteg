@@ -189,15 +189,15 @@
 
     <section class="panel">
       <label class="drop" id="dropArea">
-        <input id="fileInput" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac,.opus" multiple>
+        <input id="fileInput" type="file" accept=".mp3,.wav,.ogg,.m4a,.flac,.aac,.opus,.aiff,.aif,.amr,.3gp,.webm" multiple>
         <div class="upload-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 16V4m-5 5 5-5 5 5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>
           </svg>
         </div>
         <strong>Перетащи аудиофайлы сюда</strong>
-        <span>или нажми, чтобы выбрать файлы на устройстве</span><br>
-        <span>MP3 · WAV · OGG · M4A · FLAC · AAC — зависит от поддержки браузера</span>
+        <span>нажми, чтобы выбрать аудиофайлы</span><br>
+        <span>Только аудио: MP3 · WAV · OGG · M4A · FLAC · AAC</span>
       </label>
 
       <div class="section-head">
@@ -221,7 +221,7 @@
           <div class="switch-line">
             <div>
               <strong>Плавные переходы</strong>
-              <p>Постепенно смешивать конец и начало треков</p>
+              <p>Плавно накладывать конец одного трека на начало следующего</p>
             </div>
             <input id="fadeToggle" class="switch" type="checkbox" checked aria-label="Плавные переходы">
           </div>
@@ -410,7 +410,7 @@
         hideMessage();
         const files = Array.from(fileList || []).filter(file =>
           file.type.startsWith("audio/") ||
-          /\.(mp3|wav|ogg|m4a|flac|aac|opus|webm)$/i.test(file.name)
+          /\.(mp3|wav|ogg|m4a|flac|aac|opus|aiff|aif|amr|3gp|webm)$/i.test(file.name)
         );
 
         if (!files.length) {
@@ -547,16 +547,29 @@
             const fadeIn = i > 0 ? overlaps[i - 1] : 0;
             const fadeOut = i < tracks.length - 1 ? overlaps[i] : 0;
 
+            // Schedule the full envelope before starting the source. Use equal-power
+            // curves so the overlap sounds smooth rather than dipping in the middle.
+            gain.gain.cancelScheduledValues(0);
+            gain.gain.setValueAtTime(fadeIn > 0 ? 0 : 1, start);
+
             if (fadeIn > 0) {
-              gain.gain.setValueAtTime(0, start);
-              gain.gain.linearRampToValueAtTime(1, start + fadeIn);
-            } else {
-              gain.gain.setValueAtTime(1, start);
+              const steps = 64;
+              const fadeInCurve = new Float32Array(steps);
+              for (let k = 0; k < steps; k++) {
+                fadeInCurve[k] = Math.sin((k / (steps - 1)) * Math.PI / 2);
+              }
+              gain.gain.setValueCurveAtTime(fadeInCurve, start, fadeIn);
             }
 
             if (fadeOut > 0) {
-              gain.gain.setValueAtTime(1, end - fadeOut);
-              gain.gain.linearRampToValueAtTime(0, end);
+              const fadeOutStart = end - fadeOut;
+              const steps = 64;
+              const fadeOutCurve = new Float32Array(steps);
+              for (let k = 0; k < steps; k++) {
+                fadeOutCurve[k] = Math.cos((k / (steps - 1)) * Math.PI / 2);
+              }
+              gain.gain.setValueAtTime(1, Math.max(start, fadeOutStart));
+              gain.gain.setValueCurveAtTime(fadeOutCurve, Math.max(start, fadeOutStart), Math.min(fadeOut, end - Math.max(start, fadeOutStart)));
             }
 
             source.connect(gain);
