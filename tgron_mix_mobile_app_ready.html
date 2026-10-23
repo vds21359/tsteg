@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0812">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tgron Mix">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Tgron Mix — аудиомикшер</title>
+  <meta name="description" content="Создавай аудиомиксы с плавными переходами и экспортом в MP3 прямо на устройстве.">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0812;
+      --panel: #14101e;
+      --panel2: #1b1528;
+      --line: #302440;
+      --text: #f7f2ff;
+      --muted: #a79bb9;
+      --purple: #9b5cff;
+      --purple2: #702dce;
+      --good: #77e6b1;
+      --danger: #ff718d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      background: radial-gradient(ellipse at 80% 0%, #26113f 0%, transparent 42%), var(--bg);
+      font: 15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .app { max-width: 1100px; margin: 0 auto; padding: 28px 18px 48px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:30px; }
+    .brand { display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:.08em; }
+    .logo {
+      width:42px; height:42px; display:grid; place-items:center; border-radius:13px;
+      background:linear-gradient(145deg, #b16bff, #6b2bd0); box-shadow:0 8px 28px #8738ed40;
+    }
+    .logo svg { width:24px; height:24px; }
+    .brand small { display:block; color:var(--muted); font-size:11px; letter-spacing:.18em; font-weight:600; }
+    .local-badge { color:#d9c6ff; border:1px solid #583a78; border-radius:999px; padding:7px 12px; font-size:12px; white-space:nowrap; }
+    h1 { font-size:clamp(28px, 4vw, 42px); line-height:1.12; margin:0 0 10px; letter-spacing:-.04em; }
+    .intro { color:var(--muted); margin:0 0 25px; }
+    .panel { background:linear-gradient(145deg, #171220, #110d19); border:1px solid var(--line); border-radius:20px; padding:20px; box-shadow:0 18px 50px #0002; }
+    .drop {
+      display:block; text-align:center; padding:34px 16px; border:1.5px dashed #684292;
+      border-radius:16px; background:#9b5cff0a; transition:.2s; cursor:pointer;
+    }
+    .drop.drag { background:#9b5cff20; border-color:#c59bff; transform:scale(1.005); }
+    .upload-icon { width:48px; height:48px; margin:0 auto 10px; border-radius:15px; display:grid; place-items:center; background:#8c4be51f; color:#caa8ff; }
+    .upload-icon svg { width:26px; height:26px; }
+    .drop strong { display:block; font-size:17px; margin-bottom:4px; }
+    .drop span { color:var(--muted); font-size:13px; }
+    .drop input { display:none; }
+    .section-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:25px 0 12px; }
+    h2 { font-size:17px; margin:0; }
+    .muted { color:var(--muted); font-size:13px; }
+    .track-list { display:grid; gap:9px; }
+    .empty { color:var(--muted); text-align:center; padding:25px 10px; border:1px solid #2c2238; border-radius:13px; }
+    .track { display:grid; grid-template-columns:38px minmax(0,1fr) auto; gap:12px; align-items:center; padding:12px; border:1px solid #2a2036; background:#171220; border-radius:14px; }
+    .track-num { width:34px; height:34px; display:grid; place-items:center; border-radius:10px; color:#d6bdff; background:#8b4de51c; font-weight:700; }
+    .track-name { min-width:0; font-weight:650; overflow-wrap:anywhere; }
+    .track-meta { color:var(--muted); font-size:12px; margin-top:3px; }
+    .wave { height:19px; display:flex; align-items:center; gap:3px; margin-top:7px; opacity:.85; }
+    .wave i { display:block; width:3px; border-radius:4px; background:linear-gradient(#c8a2ff,#7938d5); }
+    .track-actions { display:flex; align-items:center; gap:5px; }
+    .icon-btn { border:1px solid #3a2b4a; color:#ddd0ef; background:#21182e; width:34px; height:34px; border-radius:10px; display:grid; place-items:center; }
+    .icon-btn:hover { border-color:#9b5cff; color:white; }
+    .icon-btn:disabled { opacity:.3; cursor:not-allowed; }
+    .remove:hover { border-color:#a33b58; color:#ff9caf; }
+    .controls { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px; }
+    .setting { background:#171220; border:1px solid #2a2036; border-radius:14px; padding:16px; }
+    .setting-top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; font-weight:650; }
+    output { color:#d3b4ff; font-weight:800; }
+    input[type=range] { width:100%; accent-color:var(--purple); }
+    .range-labels { display:flex; justify-content:space-between; color:var(--muted); font-size:11px; }
+    .switch-line { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .switch-line p { margin:3px 0 0; color:var(--muted); font-size:12px; font-weight:400; }
+    .switch { appearance:none; width:44px; height:25px; background:#443750; border-radius:99px; position:relative; flex:none; transition:.2s; }
+    .switch:before { content:""; position:absolute; width:19px; height:19px; border-radius:50%; background:white; top:3px; left:3px; transition:.2s; }
+    .switch:checked { background:var(--purple2); }
+    .switch:checked:before { left:22px; }
+    .bottom-row { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:20px; flex-wrap:wrap; }
+    .summary { color:var(--muted); font-size:13px; }
+    .buttons { display:flex; gap:9px; flex-wrap:wrap; }
+    .btn { border:1px solid #49335e; border-radius:12px; padding:11px 16px; color:var(--text); background:#21182e; font-weight:700; }
+    .btn:hover { border-color:#9b5cff; }
+    .btn.primary { background:linear-gradient(110deg,#9b5cff,#762bdb); border-color:transparent; box-shadow:0 8px 24px #7c38db30; }
+    .btn.primary:hover { filter:brightness(1.1); }
+    .btn:disabled { opacity:.45; cursor:not-allowed; }
+    .progress-wrap { margin-top:18px; display:none; }
+    .progress-wrap.show { display:block; }
+    .progress-line { height:7px; background:#302440; border-radius:99px; overflow:hidden; margin-top:8px; }
+    .progress-line div { width:0; height:100%; background:linear-gradient(90deg,#8d45ef,#d0aaff); transition:width .15s; }
+    .message { margin-top:14px; padding:12px 14px; border-radius:12px; display:none; white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; }
+    .message.show { display:block; }
+    .message.error { color:#ffb4c2; border:1px solid #773448; background:#3a1723; }
+    .message.success { color:#a5f3cc; border:1px solid #285c48; background:#10271e; }
+    footer { text-align:center; color:#82758f; font-size:12px; margin-top:23px; }
+    button, .drop, input { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, input:focus-visible, .drop:focus-within {
+      outline: 2px solid #c7a2ff; outline-offset: 3px;
+    }
+    @media (min-width: 900px) {
+      .app { padding-top: 34px; }
+      .panel { padding: 24px; }
+      .drop { padding: 42px 20px; }
+    }
+    @media (max-width:650px) {
+      body { background: radial-gradient(ellipse at 50% -5%, #32134d 0%, transparent 45%), var(--bg); }
+      .app {
+        padding: max(14px, env(safe-area-inset-top)) 12px
+                 calc(24px + env(safe-area-inset-bottom));
+        max-width: 560px;
+      }
+      header { margin-bottom: 25px; }
+      .brand { gap: 10px; font-size: 14px; }
+      .logo { width: 40px; height: 40px; border-radius: 13px; }
+      .local-badge { display:none; }
+      h1 { font-size: 31px; letter-spacing: -.045em; }
+      .intro { font-size: 14px; margin-bottom: 20px; max-width: 34em; }
+      .panel {
+        padding: 12px; border-radius: 22px;
+        box-shadow: 0 20px 60px #0004;
+      }
+      .drop {
+        padding: 25px 12px; border-radius: 17px;
+        min-height: 174px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      }
+      .drop strong { font-size: 16px; }
+      .drop span { font-size: 12px; }
+      .section-head { margin: 22px 2px 11px; }
+      h2 { font-size: 16px; }
+      .track-list { gap: 8px; }
+      .track { grid-template-columns: 30px minmax(0,1fr); gap: 9px; padding: 11px 9px; border-radius: 15px; }
+      .track-num { width: 29px; height: 29px; font-size: 12px; border-radius: 9px; }
+      .track-name { font-size: 13px; }
+      .track-meta { font-size: 11px; }
+      .wave { height: 16px; margin-top: 6px; }
+      .wave i { width: 2px; }
+      .track-actions { grid-column: 2; justify-content:flex-start; gap: 6px; margin-top: 2px; }
+      .icon-btn { width: 38px; height: 36px; border-radius: 11px; }
+      .controls { grid-template-columns:1fr; gap: 9px; margin-top: 13px; }
+      .setting { padding: 14px; border-radius: 15px; }
+      .setting-top { font-size: 13px; }
+      input[type=range] { min-height: 26px; }
+      .bottom-row { align-items:stretch; gap: 12px; margin-top: 16px; }
+      .summary { font-size: 12px; }
+      .buttons { display:grid; grid-template-columns: 94px minmax(0,1fr); width:100%; gap: 8px; }
+      .btn { min-height: 48px; padding: 11px 12px; font-size: 13px; border-radius: 14px; }
+      .btn.primary { box-shadow: 0 8px 22px #7c38db38; }
+      .progress-wrap { margin-top: 16px; }
+      .message { font-size: 12px; line-height: 1.55; }
+      footer { font-size: 11px; padding: 0 14px; margin-top: 19px; }
+    }
+    @media (max-width: 360px) {
+      .app { padding-left: 9px; padding-right: 9px; }
+      h1 { font-size: 28px; }
+      .panel { padding: 9px; }
+      .track-actions { gap: 4px; }
+      .icon-btn { width: 34px; height: 34px; }
+      .buttons { grid-template-columns: 82px minmax(0,1fr); }
+      .btn { font-size: 12px; padding-left: 8px; padding-right: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+            <path d="M3 10v4M7 6v12M11 3v18M15 7v10M19 10v4M22 9v6"/>
+          </svg>
+        </div>
+        <div>TGRON MIX<small>AUDIO STUDIO</small></div>
+      </div>
+      <div class="local-badge">🔒 Обработка в браузере</div>
+    </header>
+
+    <h1>Собери свой микс</h1>
+    <p class="intro">Добавь аудиофайлы, настрой плавные переходы и скачай готовый MP3.</p>
+
+    <section class="panel">
+      <label class="drop" id="dropArea">
+        <input id="fileInput" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac,.aac,.opus" multiple>
+        <div class="upload-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V4m-5 5 5-5 5 5"/><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>
+          </svg>
+        </div>
+        <strong>Перетащи аудиофайлы сюда</strong>
+        <span>или нажми, чтобы выбрать файлы на устройстве</span><br>
+        <span>MP3 · WAV · OGG · M4A · FLAC · AAC — зависит от поддержки браузера</span>
+      </label>
+
+      <div class="section-head">
+        <h2>Твои дорожки</h2>
+        <span class="muted" id="trackCount">0 файлов</span>
+      </div>
+      <div class="track-list" id="trackList">
+        <div class="empty" id="emptyState">Пока пусто — добавь два или больше аудиофайла.</div>
+      </div>
+
+      <div class="controls">
+        <div class="setting">
+          <div class="setting-top">
+            <label for="fadeRange">Переход между треками</label>
+            <output id="fadeOutput" for="fadeRange">3 сек</output>
+          </div>
+          <input id="fadeRange" type="range" min="0" max="10" step="0.5" value="3">
+          <div class="range-labels"><span>Без перехода</span><span>10 секунд</span></div>
+        </div>
+        <div class="setting">
+          <div class="switch-line">
+            <div>
+              <strong>Плавные переходы</strong>
+              <p>Постепенно смешивать конец и начало треков</p>
+            </div>
+            <input id="fadeToggle" class="switch" type="checkbox" checked aria-label="Плавные переходы">
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-row">
+        <div class="summary" id="summary">Добавь файлы, чтобы начать.</div>
+        <div class="buttons">
+          <button class="btn" id="clearBtn" type="button">Очистить</button>
+          <button class="btn primary" id="mixBtn" type="button" disabled>✦ Создать микс MP3</button>
+        </div>
+      </div>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="muted" id="progressText">Подготовка аудио…</div>
+        <div class="progress-line"><div id="progressBar"></div></div>
+      </div>
+      <div class="message" id="message" role="status" aria-live="polite"></div>
+    </section>
+
+    <footer>Аудио обрабатывается на твоём устройстве. Файлы не отправляются на сервер.</footer>
+  </main>
+
+  <!-- LAME.js encodes the rendered audio into MP3 in the browser. Internet is needed to load this library. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+  <script>
+    (() => {
+      "use strict";
+
+      const $ = (id) => document.getElementById(id);
+      const fileInput = $("fileInput");
+      const dropArea = $("dropArea");
+      const trackList = $("trackList");
+      const emptyState = $("emptyState");
+      const trackCount = $("trackCount");
+      const fadeRange = $("fadeRange");
+      const fadeOutput = $("fadeOutput");
+      const fadeToggle = $("fadeToggle");
+      const mixBtn = $("mixBtn");
+      const clearBtn = $("clearBtn");
+      const summary = $("summary");
+      const progressWrap = $("progressWrap");
+      const progressText = $("progressText");
+      const progressBar = $("progressBar");
+      const message = $("message");
+
+      let tracks = [];
+      let audioContext = null;
+      let busy = false;
+      let previewAudio = null;
+
+      function getAudioContext() {
+        if (!audioContext) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          if (!Ctx) throw new Error("Этот браузер не поддерживает Web Audio API.");
+          audioContext = new Ctx();
+        }
+        return audioContext;
+      }
+
+      function formatTime(seconds) {
+        if (!Number.isFinite(seconds)) return "—:—";
+        const s = Math.floor(seconds);
+        return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+      }
+
+      function formatSize(bytes) {
+        if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} КБ`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+      }
+
+      function totalDuration() {
+        if (!tracks.length) return 0;
+        const durations = tracks.map(t => t.buffer.duration);
+        let total = durations[0];
+        const fade = fadeToggle.checked ? Number(fadeRange.value) : 0;
+        for (let i = 1; i < durations.length; i++) {
+          const overlap = Math.min(fade, durations[i - 1] * 0.49, durations[i] * 0.49);
+          total += durations[i] - overlap;
+        }
+        return total;
+      }
+
+      function showMessage(text, kind = "success") {
+        message.textContent = text;
+        message.className = `message show ${kind}`;
+      }
+
+      function hideMessage() {
+        message.textContent = "";
+        message.className = "message";
+      }
+
+      function updateSummary() {
+        const count = tracks.length;
+        trackCount.textContent = `${count} ${count === 1 ? "файл" : count >= 2 && count <= 4 ? "файла" : "файлов"}`;
+        mixBtn.disabled = busy || count < 2;
+        clearBtn.disabled = busy || count === 0;
+        if (!count) {
+          summary.textContent = "Добавь файлы, чтобы начать.";
+        } else {
+          const ready = tracks.every(t => t.buffer);
+          summary.textContent = ready
+            ? `${count} дорожек · итоговая длина около ${formatTime(totalDuration())}`
+            : "Подготавливаю аудиофайлы…";
+        }
+      }
+
+      function makeWave(seed) {
+        let x = seed || 13;
+        let html = "";
+        for (let i = 0; i < 42; i++) {
+          x = (x * 9301 + 49297) % 233280;
+          const h = 4 + Math.floor((x / 233280) * 16);
+          html += `<i style="height:${h}px"></i>`;
+        }
+        return html;
+      }
+
+      function renderTracks() {
+        trackList.innerHTML = "";
+        if (!tracks.length) {
+          trackList.appendChild(emptyState);
+          emptyState.style.display = "block";
+          updateSummary();
+          return;
+        }
+        tracks.forEach((track, index) => {
+          const row = document.createElement("div");
+          row.className = "track";
+
+          const num = document.createElement("div");
+          num.className = "track-num";
+          num.textContent = String(index + 1);
+
+          const info = document.createElement("div");
+          info.style.minWidth = "0";
+
+          const name = document.createElement("div");
+          name.className = "track-name";
+          name.textContent = track.file.name;
+
+          const meta = document.createElement("div");
+          meta.className = "track-meta";
+          meta.textContent = `${track.buffer ? formatTime(track.buffer.duration) : "Подготовка…"} · ${formatSize(track.file.size)}`;
+
+          const wave = document.createElement("div");
+          wave.className = "wave";
+          wave.innerHTML = makeWave(index * 73 + track.file.size);
+
+          info.append(name, meta, wave);
+
+          const actions = document.createElement("div");
+          actions.className = "track-actions";
+
+          const up = makeButton("↑", "Переместить вверх", () => moveTrack(index, -1));
+          up.disabled = busy || index === 0;
+          const down = makeButton("↓", "Переместить вниз", () => moveTrack(index, 1));
+          down.disabled = busy || index === tracks.length - 1;
+          const play = makeButton("▶", "Прослушать", () => previewTrack(track));
+          play.disabled = busy || !track.url;
+          const remove = makeButton("×", "Удалить дорожку", () => removeTrack(index));
+          remove.classList.add("remove");
+          remove.disabled = busy;
+
+          actions.append(up, down, play, remove);
+          row.append(num, info, actions);
+          trackList.appendChild(row);
+        });
+        updateSummary();
+      }
+
+      function makeButton(text, title, handler) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "icon-btn";
+        button.textContent = text;
+        button.title = title;
+        button.setAttribute("aria-label", title);
+        button.addEventListener("click", handler);
+        return button;
+      }
+
+      async function addFiles(fileList) {
+        hideMessage();
+        const files = Array.from(fileList || []).filter(file =>
+          file.type.startsWith("audio/") ||
+          /\.(mp3|wav|ogg|m4a|flac|aac|opus|webm)$/i.test(file.name)
+        );
+
+        if (!files.length) {
+          showMessage("Выбери аудиофайлы. Некоторые форматы могут не поддерживаться твоим браузером.", "error");
+          return;
+        }
+
+        const remaining = Math.max(0, 30 - tracks.length);
+        if (files.length > remaining) {
+          showMessage("Можно добавить максимум 30 дорожек за один микс. Лишние файлы пропущены.", "error");
+        }
+        const selected = files.slice(0, remaining);
+        if (!selected.length) {
+          showMessage("Достигнут лимит в 30 дорожек.", "error");
+          return;
+        }
+
+        const ctx = getAudioContext();
+        for (const file of selected) {
+          const track = { file, buffer: null, url: URL.createObjectURL(file) };
+          tracks.push(track);
+          renderTracks();
+          try {
+            const arrayBuffer = await file.arrayBuffer();
+            track.buffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+          } catch (err) {
+            tracks = tracks.filter(t => t !== track);
+            URL.revokeObjectURL(track.url);
+            renderTracks();
+            showMessage(`Не удалось прочитать «${file.name}». Возможно, формат не поддерживается браузером.`, "error");
+          }
+          renderTracks();
+        }
+        fileInput.value = "";
+      }
+
+      function moveTrack(index, direction) {
+        const target = index + direction;
+        if (target < 0 || target >= tracks.length || busy) return;
+        [tracks[index], tracks[target]] = [tracks[target], tracks[index]];
+        renderTracks();
+      }
+
+      function removeTrack(index) {
+        if (busy) return;
+        const track = tracks[index];
+        if (track) URL.revokeObjectURL(track.url);
+        tracks.splice(index, 1);
+        renderTracks();
+        hideMessage();
+      }
+
+      function clearTracks() {
+        if (busy) return;
+        if (previewAudio) {
+          previewAudio.pause();
+          previewAudio = null;
+        }
+        tracks.forEach(t => URL.revokeObjectURL(t.url));
+        tracks = [];
+        renderTracks();
+        hideMessage();
+        progressWrap.classList.remove("show");
+      }
+
+      function previewTrack(track) {
+        if (!track.url || busy) return;
+        if (previewAudio) {
+          previewAudio.pause();
+          previewAudio = null;
+        }
+        previewAudio = new Audio(track.url);
+        previewAudio.play().catch(() => showMessage("Браузер не смог воспроизвести этот файл.", "error"));
+      }
+
+      function setBusy(value) {
+        busy = value;
+        mixBtn.disabled = busy || tracks.length < 2;
+        clearBtn.disabled = busy || tracks.length === 0;
+        fileInput.disabled = busy;
+        fadeRange.disabled = busy;
+        fadeToggle.disabled = busy;
+        renderTracks();
+      }
+
+      function setProgress(value, text) {
+        progressWrap.classList.add("show");
+        progressBar.style.width = `${Math.max(0, Math.min(100, value))}%`;
+        progressText.textContent = text;
+      }
+
+      async function renderMix() {
+        if (tracks.length < 2 || busy) return;
+        hideMessage();
+        if (!window.lamejs || !window.lamejs.Mp3Encoder) {
+          showMessage("Не загрузился MP3-кодировщик. Проверь интернет и перезагрузи страницу.", "error");
+          return;
+        }
+        if (tracks.some(t => !t.buffer)) {
+          showMessage("Подожди, пока аудиофайлы подготовятся.", "error");
+          return;
+        }
+
+        setBusy(true);
+        setProgress(2, "Подготавливаю микс…");
+
+        try {
+          const sampleRate = 44100;
+          const durations = tracks.map(t => t.buffer.duration);
+          const fade = fadeToggle.checked ? Number(fadeRange.value) : 0;
+          const starts = [0];
+          const overlaps = [];
+
+          for (let i = 1; i < tracks.length; i++) {
+            const overlap = Math.min(fade, durations[i - 1] * 0.49, durations[i] * 0.49);
+            overlaps.push(overlap);
+            starts[i] = starts[i - 1] + durations[i - 1] - overlap;
+          }
+
+          const duration = starts[starts.length - 1] + durations[durations.length - 1];
+          const frameCount = Math.ceil(duration * sampleRate);
+          const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+          if (!OfflineCtx) throw new Error("Этот браузер не поддерживает OfflineAudioContext.");
+
+          setProgress(8, "Смешиваю дорожки в браузере…");
+          const offline = new OfflineCtx(2, frameCount, sampleRate);
+
+          tracks.forEach((track, i) => {
+            const source = offline.createBufferSource();
+            source.buffer = track.buffer;
+            const gain = offline.createGain();
+            const start = starts[i];
+            const end = start + track.buffer.duration;
+            const fadeIn = i > 0 ? overlaps[i - 1] : 0;
+            const fadeOut = i < tracks.length - 1 ? overlaps[i] : 0;
+
+            if (fadeIn > 0) {
+              gain.gain.setValueAtTime(0, start);
+              gain.gain.linearRampToValueAtTime(1, start + fadeIn);
+            } else {
+              gain.gain.setValueAtTime(1, start);
+            }
+
+            if (fadeOut > 0) {
+              gain.gain.setValueAtTime(1, end - fadeOut);
+              gain.gain.linearRampToValueAtTime(0, end);
+            }
+
+            source.connect(gain);
+            gain.connect(offline.destination);
+            source.start(start);
+          });
+
+          const rendered = await offline.startRendering();
+          setProgress(55, "Кодирую MP3…");
+
+          const left = rendered.getChannelData(0);
+          const right = rendered.getChannelData(1);
+          const encoder = new window.lamejs.Mp3Encoder(2, sampleRate, 192);
+          const chunkSize = 1152;
+          const mp3Chunks = [];
+
+          for (let i = 0; i < left.length; i += chunkSize) {
+            const end = Math.min(i + chunkSize, left.length);
+            const l = new Int16Array(end - i);
+            const r = new Int16Array(end - i);
+
+            for (let j = i; j < end; j++) {
+              const li = Math.max(-1, Math.min(1, left[j]));
+              const ri = Math.max(-1, Math.min(1, right[j]));
+              l[j - i] = li < 0 ? li * 32768 : li * 32767;
+              r[j - i] = ri < 0 ? ri * 32768 : ri * 32767;
+            }
+
+            const encoded = encoder.encodeBuffer(l, r);
+            if (encoded.length) mp3Chunks.push(new Uint8Array(encoded));
+
+            if (i % (chunkSize * 100) === 0) {
+              const percent = 55 + Math.round((i / left.length) * 40);
+              setProgress(percent, `Кодирую MP3… ${Math.min(99, percent)}%`);
+              await new Promise(resolve => setTimeout(resolve, 0));
+            }
+          }
+
+          const finalChunk = encoder.flush();
+          if (finalChunk.length) mp3Chunks.push(new Uint8Array(finalChunk));
+
+          const blob = new Blob(mp3Chunks, { type: "audio/mpeg" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "tgron-mix.mp3";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+          setProgress(100, "Готово! Скачивание MP3 началось.");
+          showMessage(`Микс готов: ${formatTime(duration)}, ${(blob.size / (1024 * 1024)).toFixed(1)} МБ.`, "success");
+        } catch (error) {
+          console.error(error);
+          showMessage(`Не удалось создать микс: ${error.message || error}\nПопробуй меньше файлов или более короткие дорожки.`, "error");
+          setProgress(0, "Ошибка обработки.");
+        } finally {
+          setBusy(false);
+        }
+      }
+
+      fileInput.addEventListener("change", e => addFiles(e.target.files));
+      dropArea.addEventListener("dragover", e => {
+        e.preventDefault();
+        dropArea.classList.add("drag");
+      });
+      dropArea.addEventListener("dragleave", () => dropArea.classList.remove("drag"));
+      dropArea.addEventListener("drop", e => {
+        e.preventDefault();
+        dropArea.classList.remove("drag");
+        addFiles(e.dataTransfer.files);
+      });
+      fadeRange.addEventListener("input", () => {
+        fadeOutput.textContent = `${Number(fadeRange.value)} сек`;
+        updateSummary();
+      });
+      fadeToggle.addEventListener("change", updateSummary);
+      mixBtn.addEventListener("click", renderMix);
+      clearBtn.addEventListener("click", clearTracks);
+
+      renderTracks();
+    })();
+  </script>
+</body>
+</html>
